@@ -1,0 +1,345 @@
+---
+title: "BDA - project"
+output: html_notebook
+---
+
+# 1. Introduction
+
+It is generally known by railway traffic managers (and the public) that bad weather is one major reason for widespread rail traffic disruption. While several different weather situations affects to rail traffic, especially long lasting snow storms are known to be very problematic for the rail traffic.
+This project tries to analyse rail traffic disruptions caused by bad weather.
+Train network is naturally very interconnected system and delay of one train often affects to several others. Here, we anyway consider only effects of weather and leave these dependecies out. This keeps things much more simplier but of course cause some 'noise' to the data.
+First some necessary initialisation tasks
+
+```{r}
+install.packages("brms")
+install.packages("tidyverse")
+install.packages("anytime")
+```
+
+```{r}
+require(lubridate)
+library(anytime)
+library(ggplot2)
+library(brms)
+theme_set(theme_minimal())
+```
+
+
+# 2. Description of the data, and the analysis problem
+
+For the task we need train delay information among with weather data. Train delay information is provided by Finnish Transport Agency (FTA). Online data is available at https://digitrafic.com. In our case, we use archive data got directly from FTA. Our dataset has been pre-processed so that train information is reported with one hour interval. The dataset contains trains delays reported on every hour on every station. Delays are reported as sum of delays of all trains arrived to the station during the particular hour. The dataset contain additional delays between train stations and cumulated delays from the start station. Here, we use additional delays.
+Finnish Meteorological Institute (FMI) provides weather observations. The data is available online (see https://en.ilmatieteenlaitos.fi/open-data for more details). Our data fetched from the online system and stored separately. The data contains aggregation of weather observations withing 100 kilometers and particular hour from all trains stations and times when trains have arrived to the station.
+Our archive contain data from 2010 to 2018. Train delay data and weather data have been concatted to the one single dataframe. The whole dataset contains over 16 million rows which is beyond a scope of this project. Thus we use only subset of the data. For training purposes, we use 10 days of data from 1st January to 10th January 2010. For validation purposes, we use corresponding 10 days period from 2011. Training dataset contains 53 412 rows and validation dataset 52 564 rows.
+More detailed description of the parameters are listed below
+
+time:                start time of one hour interval
+trainstation:        train station short code
+train_type:          K -> inter city
+                     L -> commuter
+                     T -> cargo
+                     M -> other
+train_count:         amount of trains passed the station during the particular hour
+total_delay:         amount of delay at the end station of the train
+delay:               amount of delay between previous and current station
+name:                observation station name
+lat:                 train station latitude
+lon:                 train station longitude
+pressure:            air pressure (hPa)
+max_temperature:     maximum temperature during the time interval (C)
+min_temperature:     minimum temperature (C)
+mean_temperature:    mean temperature (C)
+mean_dewpoint:       mean dew point (C)
+mean_humidity:       mean humidity (percents)
+mean_winddirection:  mean wind direction (degrees)
+mean_windspeedms:    mean wind speed (m/s), 
+max_windgust:        maximum wind gust (m/s)
+max_precipitation1h: 1 hour precipitation accumulation (mm)
+max_snowdepth:       maximum snow depth (cm)
+max_n:               maximum cloudiness (1/8)
+min_vis:             minimum visibility (m) 
+min_clhb:            minimum cloud base height (m)
+max_precipitation3h: 3 hour precipitation accumulation (mm)
+max_precipitation6h: 6 hour precipitation accumulation (mm)
+flashcount:          flash count with 30 km radius from the train station
+
+- 99 stands for missing value
+
+Data license is CC4BY.
+
+We load data from csv file following:
+
+```{r}
+data_file <- "tiny_filtered.csv"
+val_data_file <- "validation.csv"
+
+df <- read.csv(data_file)
+df$datetime <- anytime::anytime(df$time)
+```
+
+```{r}
+head(df)
+tail(df)
+dim(df)
+```
+
+Timeseries of the delay is plotted below. One can see, that the timeseries is very spiky which is expected. Normally trains goes relatively well on schedule and when bad delays happen, disruptions are typically widespread accross the rail network. One may also wonder high base value of the delays (roughly 100 minutes). It's good to remember that values are sum of delays of all trains arrived to all stations.
+
+```{r}
+library(scales)
+options(repr.plot.width=10, repr.plot.height=4)
+ggplot(data = df, aes(x = datetime, y = delay))+
+  geom_line(color = "#00AFBB", size = 1) +
+  scale_x_datetime(date_labels = "%a %d %b %Y", breaks = date_breaks("1 day"),
+  minor_breaks = date_breaks("2 hour")) +
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+```{r}
+library(reshape2)
+cols = c('train_count', 'delay', 'total_delay', 
+         'min_temperature', 'mean_temperature', 
+         'max_temperature', 'pressure', 'mean_humidity', 
+         'mean_winddirection', 'mean_windspeedms', 'max_windgust', 
+         'max_precipitation1h', 'max_snowdepth', 'max_n', 
+         'min_vis', 'min_clhb', 'max_precipitation3h', 
+         'max_precipitation6h', 'flashcount')
+#ggplot(melt(df, id=cols), aes(x = value)) + 
+#    facet_wrap(~ variable, scales = "free", ncol = 2) + 
+#    geom_histogram(binwidth = .5)
+par(mfrow=c(2,3))
+options(repr.plot.width=10, repr.plot.height=6)
+#subset(df, 'max_snowdepth'!=-99)
+for (col in cols){
+#    ggplot(df, aes(data)) + 
+#      facet_wrap(~ col, scales = "free", ncol = 2) + 
+#      geom_histogram(stat="count")
+    hist(subset(df, col != -99)[,col],
+         main=paste("Histogram fors ",col),
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+}
+```
+
+Histograms for all rows where delay between stations have been over 5 minutes.
+```{r}
+df_delay <- df[df$delay > 5,]
+par(mfrow=c(2,3))
+for (col in cols){
+    hist(subset(df_delay, col != -99)[,col],
+         main=paste("Histogram fors ",col),
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+}
+```
+
+```{r}
+df_delay <- df[df$delay > 5,]
+
+hist(subset(df, min_temperature != -99)[,"min_temperature"],
+         main="Histogram fors minimum temperature",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+
+hist(subset(df, pressure != -99)[,"pressure"],
+         main="Histogram fors pressure",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+
+hist(subset(df, mean_humidity != -99)[,"mean_humidity"],
+         main="Histogram fors mean humidity",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+
+hist(subset(df, max_windgust != -99)[,"max_windgust"],
+         main="Histogram fors maximum wind gust",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+
+hist(subset(df, mean_winddirection != -99)[,"mean_winddirection"],
+         main="Histogram for wind direction",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+
+hist(subset(df, max_precipitation6h != -99)[,"max_precipitation6h"],
+         main="Histogram fors 6 hour precipitation sum",
+         xlab='', col='#00AFBB', border='#00AFBB',
+         breaks=50)
+```
+
+
+# 3. Description of the model
+
+```{r}
+date1 <- as.POSIXct("2010-01-01 00:00:00")
+date2 <- as.POSIXct("2010-01-02 00:00:00")
+int <- new_interval(date1, date2)
+
+df_tiny <- df[df$datetime %within% int,]
+dim(df_tiny)
+```
+
+```{r}
+prior1 <- c(set_prior("normal(-19,45)", class = "b", coef="min_temperature"),
+           set_prior("normal(1024,69)", class = "b", coef="pressure"),
+           set_prior("normal(85,17.5)", class = "b", coef="mean_humidity"),
+           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
+#           set_prior("gamma(1,1000)", lb=0, class = "b"),
+           set_prior("gamma(1,0.23)", lb=0, class = "b"))
+```
+
+
+```{r}
+options(mc.cores = parallel::detectCores())
+fit1 <- brm(
+    delay ~ 1 + min_temperature + pressure + 
+            mean_humidity + max_windgust + 
+            mean_winddirection + 
+            max_precipitation6h + (1|p|train_type),
+    data = df_tiny
+)
+```
+
+```{r}
+options(mc.cores = parallel::detectCores())
+fit2 <- brm(
+    delay ~ 1 + min_temperature + pressure + 
+            mean_humidity + max_windgust + 
+            mean_winddirection + 
+            max_precipitation6h + (1|p|trainstation) +(1|p|train_type) ,
+    data = df_tiny,
+    prior = prior1
+)
+```
+
+
+```{r}
+summary(fit1)
+```
+
+# 4. Description of the prior choices
+
+```{r}
+prior_summary(fit1)
+```
+
+# 5. Stan
+Stan code is generated by BRMS package. It can be printed following
+```{r}
+fit1$model
+```
+
+# 6. How the Stan model run
+
+
+# 7. Convergence diagnostics
+RHat 1.0, so it has converged
+PSIS-LOO -- print K-values -- print n_eff -- report LOO-value
+```{r}
+plot(fit1)
+```
+
+
+```{r}
+rhat(fit1)
+```
+
+```{r}
+stanplot(fit1, type='neff')
+```
+
+```{r}
+stanplot(fit1, type='rhat')
+```
+
+# 8. Posterior predictive checking
+
+
+```{r}
+library("bayesplot")
+yrep <- posterior_predict(fit1, draws = 500)
+```
+
+
+Mean value of the simulations (light blue) and the observed data (dark blue).
+
+```{r}
+y <- df_tiny$delay
+ppc_stat(y, yrep, binwidth=.005)
+```
+
+Probability that delay is 0 minutes in the simulations (light blue) and the observed data (dark blue).
+
+```{r}
+zero <- function(x) mean(x == 0)
+ppc_stat(y, yrep, 'zero', binwidth=.005)
+```
+
+Probability that delay is over 5 minutes in the simulations (light blue) and the observed data (dark blue).
+
+```{r}
+over5 <- function(x) mean(x > 5)
+ppc_stat(y, yrep, 'over5', binwidth=.005)
+```
+
+```{r}
+ppc_dens_overlay(y, yrep)
+```
+
+
+```{r}
+ppc_hist(y, yrep[1:5, ], binwidth=.005)
+```
+
+# 9. Model comparison
+
+# 10. Predictive performance assessment
+
+```{r}
+validation <- read.csv(val_data_file)
+validation$datetime <- anytime::anytime(validation$time)
+```
+
+```{r}
+val_data <- validation[,c('min_temperature', 'pressure')]
+pred <- predict(fit1, newdata = val_data, re_formula = NA)
+head(pred, 3)
+```
+
+```{r}
+options(repr.plot.width=4, repr.plot.height=4)
+summary(pred)
+plot(pred)
+```
+
+```{r}
+options(repr.plot.width=14, repr.plot.height=4)
+val_times <- validation[,c('datetime','delay')]
+fitval <- data.frame(cbind(val_times,pred[,-2]))
+names(fitval) <- c("time", "delay", "estimate", "lower", "upper")
+head(fitval, 3)
+ggplot(data=fitval, aes(x = time, y = 'delay')) +
+    geom_line(data = fitval, aes(y = delay), size = 0.5) +
+    geom_line(data = fitval, aes(y = lower), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval, aes(y = upper), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval, aes(y = estimate), size = 0.5, col='#00AFBB')
+```
+
+```{r}
+rmse <- function(error)
+{
+    sqrt(mean(error^2))
+} 
+mae <- function(error)
+{
+    mean(abs(error))
+}
+error <- validation[,'delay'] - fitval[,'estimate']
+cat(sprintf("RMSE: %.2f\n", rmse(error)))
+cat(sprintf("MAE:  %.2f", mae(error)))
+```
+
+# 11. Sensitivity analysis
+
+# 12. Discussion of problems, and potential improvements
+
+
