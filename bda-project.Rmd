@@ -274,7 +274,7 @@ We can analyse a distribution of simulated draws and observed data by plotting t
 #ppc_dens_overlay(y, yrep)
 ```
 
-To see 
+To see how different parameters are modelled, we can draw some histograms of simulated and observed delays. The same thing could be done by plotting draws from modelled and observed data to the same plot by using ppc_dens_overlay function but unfortunately this requires too much memory. 
 
 ```{r}
 ppc_hist(y, yrep[1:5, ], binwidth=.005)
@@ -294,12 +294,12 @@ validation$datetime <- anytime::anytime(validation$time)
 Then we create a prediction of train delays based on the same parameters we have used to fit our model.  
 
 ```{r}
-val_data <- validation[,c('min_temperature', 'pressure')]
+val_data <- validation[,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
 pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
 
-TOOD
+We can plot values and corresponding estimated errors. We can see that model forecasts negative values which of course doesn't make sense. Median values see plausible but estimated errors are large. From the plot we can also see, that predicted values are very discrete which is not good.
 
 ```{r}
 options(repr.plot.width=4, repr.plot.height=4)
@@ -307,7 +307,7 @@ summary(pred)
 plot(pred)
 ```
 
-To really visualise predictions, we plot predicted delays and true delays on the same plot. From the plot we can see, that although the model has converged well, it has no real prediction power. The models forecast essentially the same number all the time.
+To really visualise predictions, we plot predicted delays and true delays on the same plot. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
 options(repr.plot.width=14, repr.plot.height=4)
