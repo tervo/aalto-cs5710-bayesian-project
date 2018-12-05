@@ -6,17 +6,21 @@ output: html_notebook
 # 1. Introduction
 
 It is generally known by railway traffic managers (and the public) that bad weather is one major reason for widespread rail traffic disruption. While several different weather situations affects to rail traffic, especially long lasting snow storms are known to be very problematic for the rail traffic.
-This project tries to analyse rail traffic disruptions caused by bad weather.
+
+This project tries to analyse rail traffic disruptions caused by bad weather. Only few previous similar attemps exists so far but the results are encouringing. Ludvigsen & Klæboe have studied affects of winter weather to the rail traffic in Norway, Sweden, Finland, Switcherland and Poland [1]. They have found that cold temperature together with heavy snow precipitation explains from 60 to 80 percent of all delays. Oneton & co. have created a train delay prediction caused by bad weather in Northern Italy [2]. Their method was based on Random Forest Regression (RFR) and features consists of air temperature, humidity, wind direction and spped, precipitation amount, pressure and sun radiation. 
+
 Train network is naturally very interconnected system and delay of one train often affects to several others. Here, we anyway consider only effects of weather and leave these dependecies out. This keeps things much more simplier but of course cause some 'noise' to the data.
 First some necessary initialisation tasks
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Sys.setenv(https_proxy="http://wwwproxy.fmi.fi:8080")
 install.packages("brms")
 install.packages("tidyverse")
 install.packages("anytime")
+install.packages("caTools")
 ```
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 require(lubridate)
 library(anytime)
 library(ggplot2)
@@ -27,9 +31,12 @@ theme_set(theme_minimal())
 
 # 2. Description of the data, and the analysis problem
 
-For the task we need train delay information among with weather data. Train delay information is provided by Finnish Transport Agency (FTA). Online data is available at https://digitrafic.com. In our case, we use archive data got directly from FTA. Our dataset has been pre-processed so that train information is reported with one hour interval. The dataset contains trains delays reported on every hour on every station. Delays are reported as sum of delays of all trains arrived to the station during the particular hour. The dataset contain additional delays between train stations and cumulated delays from the start station. Here, we use additional delays.
+For the task we need train delay information among with weather data. Train delay information is provided by Finnish Transport Agency (FTA). Online data is available at https://digitrafic.com. In our case, we use archive data got directly from FTA. Our dataset has been pre-processed so that train information is reported with one hour interval. The dataset contains trains delays reported on every hour on every station. Delays are reported as sum of delays of all trains arrived to the station during the particular hour. The dataset contain additional delays between train stations ('delay') and cumulated delays at the end station ('total_delay'). Here, we use additional delays.
+
 Finnish Meteorological Institute (FMI) provides weather observations. The data is available online (see https://en.ilmatieteenlaitos.fi/open-data for more details). Our data fetched from the online system and stored separately. The data contains aggregation of weather observations withing 100 kilometers and particular hour from all trains stations and times when trains have arrived to the station.
+
 Our archive contain data from 2010 to 2018. Train delay data and weather data have been concatted to the one single dataframe. The whole dataset contains over 16 million rows which is beyond a scope of this project. Thus we use only subset of the data. For training purposes, we use 10 days of data from 1st January to 10th January 2010. For validation purposes, we use corresponding 10 days period from 2011. Training dataset contains 53 412 rows and validation dataset 52 564 rows.
+
 More detailed description of the parameters are listed below
 
 time:                start time of one hour interval
@@ -76,13 +83,15 @@ df <- read.csv(data_file)
 df$datetime <- anytime::anytime(df$time)
 ```
 
+Loaded dataframe is arranged by time. It looks like following:
+
 ```{r}
 head(df)
 tail(df)
 dim(df)
 ```
 
-Timeseries of the delay is plotted below. One can see, that the timeseries is very spiky which is expected. Normally trains goes relatively well on schedule and when bad delays happen, disruptions are typically widespread accross the rail network. One may also wonder high base value of the delays (roughly 100 minutes). It's good to remember that values are sum of delays of all trains arrived to all stations.
+Timeseries of the delay is plotted below. One can see, that the timeseries is very spiky which is expected. Normally trains run relatively well on schedule and when bad delays happen, disruptions are typically widespread accross the rail network. One may also wonder high base value of the delays (roughly 100 minutes). It's good to remember that values are sum of delays of all trains arrived to all stations.
 
 ```{r}
 library(scales)
@@ -94,76 +103,45 @@ ggplot(data = df, aes(x = datetime, y = delay))+
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
+As weather observation network is relatively sparse (around 200 weather stations) and most stations measure only subset of all used variables, the data contain lots of missing values (encoded with -99). In this case we want to exclude them in the future processing.
+
+```{r}
+df[df == -99] <- NA
+df <- df[complete.cases(df),]
+```
+
+To get sense of data, we can print histograms of measurements. We can also draw histograms of parameters for all rows where delay between stations have been significant, let's say over 50 minutes. This way we can compare cases where rail have travelled in time and where bad delays have occured.
+
+Resulting graph is plotted below. Blue bars stands for all rows and red columns for rows with significant delays. Most histograms looks roughly following normal distribution. Histogram of delays follows the same theme: most of trains run in time but the distribution has a very long tail. Total cloudiness ('max_n') can get discrete values from 0 to 8. 9 stands for 'undetermined'.
+
+TODO: add analysis with larger dataset
+
 ```{r}
 library(reshape2)
+
 cols = c('train_count', 'delay', 'total_delay', 
          'min_temperature', 'mean_temperature', 
          'max_temperature', 'pressure', 'mean_humidity', 
          'mean_winddirection', 'mean_windspeedms', 'max_windgust', 
          'max_precipitation1h', 'max_snowdepth', 'max_n', 
          'min_vis', 'min_clhb', 'max_precipitation3h', 
-         'max_precipitation6h', 'flashcount')
-#ggplot(melt(df, id=cols), aes(x = value)) + 
-#    facet_wrap(~ variable, scales = "free", ncol = 2) + 
-#    geom_histogram(binwidth = .5)
+         'max_precipitation6h')
+
+df_delay <- df[df$delay > 50,]
+
 par(mfrow=c(2,3))
 options(repr.plot.width=10, repr.plot.height=6)
-#subset(df, 'max_snowdepth'!=-99)
+
 for (col in cols){
-#    ggplot(df, aes(data)) + 
-#      facet_wrap(~ col, scales = "free", ncol = 2) + 
-#      geom_histogram(stat="count")
-    hist(subset(df, col != -99)[,col],
-         main=paste("Histogram fors ",col),
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
+    p1 <- hist(df[,col],
+          main=paste("Histogram fors ",col),
+          xlab='', col=rgb(0,0,1), border=rgb(0,0,1),
+          breaks=50, freq=FALSE)
+    p2 <- hist(df_delay[,col],
+          main=paste("Histogram fors ",col),
+          xlab='', col=rgb(1,0,0,1/4), border=rgb(1,0,0,1/2),
+          breaks=50, freq=FALSE, add=T)
 }
-```
-
-Histograms for all rows where delay between stations have been over 5 minutes.
-```{r}
-df_delay <- df[df$delay > 5,]
-par(mfrow=c(2,3))
-for (col in cols){
-    hist(subset(df_delay, col != -99)[,col],
-         main=paste("Histogram fors ",col),
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-}
-```
-
-```{r}
-df_delay <- df[df$delay > 5,]
-
-hist(subset(df, min_temperature != -99)[,"min_temperature"],
-         main="Histogram fors minimum temperature",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-
-hist(subset(df, pressure != -99)[,"pressure"],
-         main="Histogram fors pressure",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-
-hist(subset(df, mean_humidity != -99)[,"mean_humidity"],
-         main="Histogram fors mean humidity",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-
-hist(subset(df, max_windgust != -99)[,"max_windgust"],
-         main="Histogram fors maximum wind gust",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-
-hist(subset(df, mean_winddirection != -99)[,"mean_winddirection"],
-         main="Histogram for wind direction",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
-
-hist(subset(df, max_precipitation6h != -99)[,"max_precipitation6h"],
-         main="Histogram fors 6 hour precipitation sum",
-         xlab='', col='#00AFBB', border='#00AFBB',
-         breaks=50)
 ```
 
 
@@ -172,7 +150,7 @@ hist(subset(df, max_precipitation6h != -99)[,"max_precipitation6h"],
 ```{r}
 date1 <- as.POSIXct("2010-01-01 00:00:00")
 date2 <- as.POSIXct("2010-01-02 00:00:00")
-int <- new_interval(date1, date2)
+int <- interval(date1, date2)
 
 df_tiny <- df[df$datetime %within% int,]
 dim(df_tiny)
@@ -194,8 +172,8 @@ fit1 <- brm(
     delay ~ 1 + min_temperature + pressure + 
             mean_humidity + max_windgust + 
             mean_winddirection + 
-            max_precipitation6h + (1|p|train_type),
-    data = df_tiny
+            max_precipitation6h + (1|p|trainstation),
+    data = df
 )
 ```
 
@@ -205,7 +183,7 @@ fit2 <- brm(
     delay ~ 1 + min_temperature + pressure + 
             mean_humidity + max_windgust + 
             mean_winddirection + 
-            max_precipitation6h + (1|p|trainstation) +(1|p|train_type) ,
+            max_precipitation6h + (1|p|trainstation),
     data = df_tiny,
     prior = prior1
 )
@@ -232,59 +210,71 @@ fit1$model
 
 
 # 7. Convergence diagnostics
-RHat 1.0, so it has converged
-PSIS-LOO -- print K-values -- print n_eff -- report LOO-value
+
+To analyse model convergence, we plot variables and check RHat values and effective sample size. 
+
+RHat stays under 1.05 so the model has converged well.
+
+```{r}
+rhat(fit1)
+stanplot(fit1, type='rhat')
+```
+
+To check a convergence of different chains and posterior distribution, we can plot fitted model. We can see, that all chains have converged to similar values for all parameters. We can also see, that all parameters have quite similar posterior distribution (with different means of course).  
+
 ```{r}
 plot(fit1)
 ```
 
-
-```{r}
-rhat(fit1)
-```
+To analyse effective sample size, we can plot ratio of effective samples and all samples. This means amount of draws being able to estimate true mean value of the parameter. We can see that none Neff/N values are below 0.1 and pretty large amount of them are over 0.5, which again verify that the model has converged well.
 
 ```{r}
 stanplot(fit1, type='neff')
 ```
-
-```{r}
-stanplot(fit1, type='rhat')
-```
+As conclusion, the model has converged well.
 
 # 8. Posterior predictive checking
 
+In posterior predictive checking one compares modelled and observed data. In other words, we take draws from the model and compare them with observed data. This way we can find systematic differenced which could indicate that modelling has failed somehow.
 
 ```{r}
 library("bayesplot")
 yrep <- posterior_predict(fit1, draws = 500)
 ```
 
+```{r}
+dim(yrep)
+dim(df[complete.cases(df),])
+```
 
-Mean value of the simulations (light blue) and the observed data (dark blue).
+First we look plain mean value of the simulations (light blue) and the observed data (dark blue). Average of observed data is in the middle of the simulated distribution, so everything looks fine.
 
 ```{r}
-y <- df_tiny$delay
+y <- df$delay
 ppc_stat(y, yrep, binwidth=.005)
 ```
 
-Probability that delay is 0 minutes in the simulations (light blue) and the observed data (dark blue).
+If we look probability that delay is 0 minutes in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. 
 
 ```{r}
 zero <- function(x) mean(x == 0)
 ppc_stat(y, yrep, 'zero', binwidth=.005)
 ```
 
-Probability that delay is over 5 minutes in the simulations (light blue) and the observed data (dark blue).
+Similarly, if we look sever distributions, probability that delay is over 50 minutes, in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. The difference is anyway smaller than in the probability of 0 minute delay.  
 
 ```{r}
-over5 <- function(x) mean(x > 5)
+over50 <- function(x) mean(x > 50)
 ppc_stat(y, yrep, 'over5', binwidth=.005)
 ```
 
+We can analyse a distribution of simulated draws and observed data by plotting them into the same plot. 
+
 ```{r}
-ppc_dens_overlay(y, yrep)
+#ppc_dens_overlay(y, yrep)
 ```
 
+To see 
 
 ```{r}
 ppc_hist(y, yrep[1:5, ], binwidth=.005)
@@ -294,10 +284,14 @@ ppc_hist(y, yrep[1:5, ], binwidth=.005)
 
 # 10. Predictive performance assessment
 
+To do predictive performance assesment, we need to read test data which our model hasn't seen yet. We use similar 10 days set from beginning of 2011.
+
 ```{r}
 validation <- read.csv(val_data_file)
 validation$datetime <- anytime::anytime(validation$time)
 ```
+
+Then we create a prediction of train delays based on the same parameters we have used to fit our model.  
 
 ```{r}
 val_data <- validation[,c('min_temperature', 'pressure')]
@@ -305,11 +299,15 @@ pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
 
+TOOD
+
 ```{r}
 options(repr.plot.width=4, repr.plot.height=4)
 summary(pred)
 plot(pred)
 ```
+
+To really visualise predictions, we plot predicted delays and true delays on the same plot. From the plot we can see, that although the model has converged well, it has no real prediction power. The models forecast essentially the same number all the time.
 
 ```{r}
 options(repr.plot.width=14, repr.plot.height=4)
@@ -323,6 +321,8 @@ ggplot(data=fitval, aes(x = time, y = 'delay')) +
     geom_line(data = fitval, aes(y = upper), size = 0.11, col='#00AFBB') +
     geom_line(data = fitval, aes(y = estimate), size = 0.5, col='#00AFBB')
 ```
+
+We can calculate model performance in terms of loss functions. In particular, we use RMSE and MAE to describe the performance. 
 
 ```{r}
 rmse <- function(error)
@@ -341,5 +341,11 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 # 11. Sensitivity analysis
 
 # 12. Discussion of problems, and potential improvements
+
+# References
+
+[1] Ludvigsen, J., & Klæboe, R. (2014). Extreme weather impacts on freight railways in Europe. Natural Hazards. https://doi.org/10.1007/s11069-013-0851-3
+
+[2] Oneto, L., Fumeo, E., Clerico, G., Canepa, R., Papa, F., Dambra, C., … Anguita, D. (2016). Advanced analytics for train delay prediction systems by including exogenous weather data. In Proceedings - 3rd IEEE International Conference on Data Science and Advanced Analytics, DSAA 2016 (pp. 458–467). https://doi.org/10.1109/DSAA.2016.57
 
 
