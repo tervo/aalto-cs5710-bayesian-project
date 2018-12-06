@@ -184,7 +184,7 @@ fit2 <- brm(
             mean_humidity + max_windgust + 
             mean_winddirection + 
             max_precipitation6h + (1|p|trainstation),
-    data = df_tiny,
+    data = df,
     prior = prior1
 )
 ```
@@ -192,12 +192,13 @@ fit2 <- brm(
 
 ```{r}
 summary(fit1)
+summary(fit2)
 ```
 
 # 4. Description of the prior choices
 
 ```{r}
-prior_summary(fit1)
+prior_summary(fit2)
 ```
 
 # 5. Stan
@@ -213,25 +214,45 @@ fit1$model
 
 To analyse model convergence, we plot variables and check RHat values and effective sample size. 
 
-RHat stays under 1.05 so the model has converged well.
+For weak prior, RHat stays under 1.05 so the model has converged well.
 
 ```{r}
 rhat(fit1)
 stanplot(fit1, type='rhat')
 ```
 
-To check a convergence of different chains and posterior distribution, we can plot fitted model. We can see, that all chains have converged to similar values for all parameters. We can also see, that all parameters have quite similar posterior distribution (with different means of course).  
+Also other model has converged well:
 
+```{r}
+rhat(fit2)
+stanplot(fit2, type='rhat')
+```
+
+To check a convergence of different chains and posterior distribution, we can plot fitted models. We can see, that all chains have converged to similar values for all parameters. We can also see, that all parameters have quite similar posterior distribution (with different means of course).  
+
+Model 1:
 ```{r}
 plot(fit1)
 ```
 
-To analyse effective sample size, we can plot ratio of effective samples and all samples. This means amount of draws being able to estimate true mean value of the parameter. We can see that none Neff/N values are below 0.1 and pretty large amount of them are over 0.5, which again verify that the model has converged well.
+Model 2:
+```{r}
+plot(fit2)
+```
 
+To analyse effective sample size, we can plot ratio of effective samples and all samples. This means amount of draws being able to estimate true mean value of the parameter. We can see that none Neff/N values are below 0.1 and pretty large amount of them are over 0.5, which again verify that both models have converged well.
+
+Model 1:
 ```{r}
 stanplot(fit1, type='neff')
 ```
-As conclusion, the model has converged well.
+Model 2:
+
+```{r}
+stanplot(fit2, type='neff')
+```
+
+As conclusion, the models have converged well.
 
 # 8. Posterior predictive checking
 
@@ -243,6 +264,11 @@ yrep <- posterior_predict(fit1, draws = 500)
 ```
 
 ```{r}
+library("bayesplot")
+yrep2 <- posterior_predict(fit2, draws = 500)
+```
+
+```{r}
 dim(yrep)
 dim(df[complete.cases(df),])
 ```
@@ -251,29 +277,60 @@ First we look plain mean value of the simulations (light blue) and the observed 
 
 ```{r}
 y <- df$delay
+```
+
+Model 1:
+```{r}
 ppc_stat(y, yrep, binwidth=.005)
+```
+
+Model 2:
+```{r}
+ppc_stat(y, yrep2, binwidth=.005)
 ```
 
 If we look probability that delay is 0 minutes in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. 
 
 ```{r}
 zero <- function(x) mean(x == 0)
+```
+
+Model 1:
+```{r}
 ppc_stat(y, yrep, 'zero', binwidth=.005)
+```
+
+Model 2:
+```{r}
+ppc_stat(y, yrep2, 'zero', binwidth=.005)
 ```
 
 Similarly, if we look sever distributions, probability that delay is over 50 minutes, in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. The difference is anyway smaller than in the probability of 0 minute delay.  
 
 ```{r}
 over50 <- function(x) mean(x > 50)
-ppc_stat(y, yrep, 'over5', binwidth=.005)
+```
+
+Model 1:
+```{r}
+ppc_stat(y, yrep, 'over50', binwidth=.005)
+```
+Model 2:
+```{r}
+ppc_stat(y, yrep2, 'over50', binwidth=.005)
 ```
 
 We can analyse a distribution of simulated draws and observed data by plotting them into the same plot. We use first 1000 rows from the data to avoid running out of memory. Resulting image tells us that our models are not able to follow true shape of observations very well. They produce negative values and miss large amount of 0 values. 
 
+Model 1:
 ```{r}
 ppc_dens_overlay(y[0:1000], yrep[,0:1000])
 ```
 
+Model 2:
+```{r}
+ppc_dens_overlay(y[0:1000], yrep2[,0:1000])
+```
 
 # 9. Model comparison
 
