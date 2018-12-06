@@ -268,17 +268,12 @@ over50 <- function(x) mean(x > 50)
 ppc_stat(y, yrep, 'over5', binwidth=.005)
 ```
 
-We can analyse a distribution of simulated draws and observed data by plotting them into the same plot. 
+We can analyse a distribution of simulated draws and observed data by plotting them into the same plot. We use first 1000 rows from the data to avoid running out of memory. Resulting image tells us that our models are not able to follow true shape of observations very well. They produce negative values and miss large amount of 0 values. 
 
 ```{r}
-#ppc_dens_overlay(y, yrep)
+ppc_dens_overlay(y[0:1000], yrep[,0:1000])
 ```
 
-To see how different parameters are modelled, we can draw some histograms of simulated and observed delays. The same thing could be done by plotting draws from modelled and observed data to the same plot by using ppc_dens_overlay function but unfortunately this requires too much memory. 
-
-```{r}
-ppc_hist(y, yrep[1:5, ], binwidth=.005)
-```
 
 # 9. Model comparison
 
@@ -289,6 +284,7 @@ To do predictive performance assesment, we need to read test data which our mode
 ```{r}
 validation <- read.csv(val_data_file)
 validation$datetime <- anytime::anytime(validation$time)
+validation <- validation[order(validation$datetime),]
 ```
 
 Then we create a prediction of train delays based on the same parameters we have used to fit our model.  
@@ -307,19 +303,23 @@ summary(pred)
 plot(pred)
 ```
 
-To really visualise predictions, we plot predicted delays and true delays on the same plot. From the plot we can see, that although the model has converged well, it has no real prediction power. 
+To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
+val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
+pred_hki <- predict(fit1, newdata = val_data_hki, re_formula = NA)
+head(pred_hki, 3)
+
 options(repr.plot.width=14, repr.plot.height=4)
-val_times <- validation[,c('datetime','delay')]
-fitval <- data.frame(cbind(val_times,pred[,-2]))
-names(fitval) <- c("time", "delay", "estimate", "lower", "upper")
-head(fitval, 3)
-ggplot(data=fitval, aes(x = time, y = 'delay')) +
-    geom_line(data = fitval, aes(y = delay), size = 0.5) +
-    geom_line(data = fitval, aes(y = lower), size = 0.11, col='#00AFBB') +
-    geom_line(data = fitval, aes(y = upper), size = 0.11, col='#00AFBB') +
-    geom_line(data = fitval, aes(y = estimate), size = 0.5, col='#00AFBB')
+val_times_hki <- validation[validation$trainstation == 'HKI', c('datetime','delay')]
+fitval_hki <- data.frame(cbind(val_times_hki,pred_hki[,-2]))
+names(fitval_hki) <- c("time", "delay", "estimate", "lower", "upper")
+head(fitval_hki, 3)
+ggplot(data=fitval_hki, aes(x = time, y = 'delay')) +
+    geom_line(data = fitval_hki, aes(y = delay), size = 0.5) +
+    geom_line(data = fitval_hki, aes(y = lower), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval_hki, aes(y = upper), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval_hki, aes(y = estimate), size = 0.5, col='#00AFBB')
 ```
 
 We can calculate model performance in terms of loss functions. In particular, we use RMSE and MAE to describe the performance. 
