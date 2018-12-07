@@ -75,10 +75,11 @@ def filter_train_type(df=[],
 
     return filt_df
 
+print('Data loaded. Filtering data...')
 data_filt = filter_train_type(data, ['K', 'L'])
-
+print('Sorting...')
 data_filt.sort_values(by=['time', 'trainstation'], inplace=True)
 
-data_hki = data.loc[:, data['trainstation'] == 'HKI']
+data_hki = data.loc[(data['trainstation'] == 'HKI')]
 print(data_hki)
-data_filt.to_csv('data/hki_all.csv', encoding='utf-8')
+data_hki.to_csv('data/hki_all.csv', encoding='utf-8')
