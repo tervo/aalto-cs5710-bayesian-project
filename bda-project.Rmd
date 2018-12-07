@@ -233,11 +233,24 @@ rhat(fit1)
 stanplot(fit1, type='rhat')
 ```
 
-Also other model has converged well:
+Also other models have converged well:
 
+Model 2:
 ```{r}
 rhat(fit2)
 stanplot(fit2, type='rhat')
+```
+
+Model 3:
+```{r}
+rhat(fit3)
+stanplot(fit3, type='rhat')
+```
+
+Model 4:
+```{r}
+rhat(fit4)
+stanplot(fit4, type='rhat')
 ```
 
 To check a convergence of different chains and posterior distribution, we can plot fitted models. We can see, that all chains have converged to similar values for all parameters. We can also see, that all parameters have quite similar posterior distribution (with different means of course).  
@@ -254,16 +267,36 @@ Model 2:
 plot(fit2)
 ```
 
+Model 3:
+```{r}
+plot(fit3)
+```
+
+Model 4:
+```{r}
+plot(fit4)
+```
+
 To analyse effective sample size, we can plot ratio of effective samples and all samples. This means amount of draws being able to estimate true mean value of the parameter. We can see that none Neff/N values are below 0.1 and pretty large amount of them are over 0.5, which again verify that both models have converged well.
 
 Model 1:
 ```{r}
 stanplot(fit1, type='neff')
 ```
-Model 2:
 
+Model 2:
 ```{r}
 stanplot(fit2, type='neff')
+```
+
+Model 3:
+```{r}
+stanplot(fit3, type='neff')
+```
+
+Model 4:
+```{r}
+stanplot(fit4, type='neff')
 ```
 
 As conclusion, the models have converged well.
@@ -372,7 +405,7 @@ validation <- validation[order(validation$datetime),]
 Then we create a prediction of train delays based on the same parameters we have used to fit our model.  
 
 ```{r}
-val_data <- validation[,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
+val_data <- validation[,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
 pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
@@ -388,7 +421,7 @@ plot(pred)
 To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
-val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
+val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
 pred_hki <- predict(fit1, newdata = val_data_hki, re_formula = NA)
 head(pred_hki, 3)
 
