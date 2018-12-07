@@ -169,7 +169,6 @@ fit1 <- brm(
 summary(fit1)
 ```
 
-
 # 4. Description of the prior choices
 
 Non informative
@@ -186,6 +185,7 @@ fit1$model
 
 # 6. How the Stan model run
 
+See above (in chapter 3).
 
 # 7. Convergence diagnostics
 
@@ -275,12 +275,12 @@ We try model with fewer variables (predictors)
 ```{r Fewer parameter}
 options(mc.cores = parallel::detectCores())
 fit2 <- brm(
-    delay ~ 1 + min_temperature + max_snowdepth + 
-            mean_winddirection + 
-            max_precipitation6h,
-    data = df,
-    # prior = prior1
-)
+    delay ~ 1 + min_temperature + max_snowdepth + mean_winddirection,
+    data = df
+    )
+```
+```{r}
+summary(fit2)
 ```
 
 
@@ -305,7 +305,7 @@ Then we create a prediction of train delays based on the same parameters we have
 ## Model 1
 
 ```{r}
-val_data <- validation[,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
+val_data <- validation[,c('min_temperature', 'min_vis', 'mean_humidity', 'max_windgust', 'mean_winddirection')]
 pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
@@ -321,7 +321,7 @@ plot(pred)
 To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
-val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
+val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'min_vis', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
 pred_hki <- predict(fit1, newdata = val_data_hki, re_formula = NA)
 head(pred_hki, 3)
 
@@ -359,36 +359,34 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 
 
 ```{r}
-val_data <- validation[,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
-pred <- predict(fit2, newdata = val_data, re_formula = NA)
-head(pred, 3)
+pred2 <- predict(fit2, newdata = val_data, re_formula = NA)
+head(pred2, 3)
 ```
 
 We can plot values and corresponding estimated errors. We can see that model forecasts negative values which of course doesn't make sense. Median values see plausible but estimated errors are large. From the plot we can also see, that predicted values are very discrete which is not good.
 
 ```{r}
 options(repr.plot.width=4, repr.plot.height=4)
-summary(pred)
-plot(pred)
+summary(pred2)
+plot(pred2)
 ```
 
 To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
-val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
-pred_hki <- predict(fit2, newdata = val_data_hki, re_formula = NA)
-head(pred_hki, 3)
+pred2_hki <- predict(fit2, newdata = val_data_hki, re_formula = NA)
+head(pred2_hki, 3)
 
 options(repr.plot.width=14, repr.plot.height=4)
-val_times_hki <- validation[validation$trainstation == 'HKI', c('datetime','delay')]
-fitval_hki <- data.frame(cbind(val_times_hki,pred_hki[,-2]))
-names(fitval_hki) <- c("time", "delay", "estimate", "lower", "upper")
-head(fitval_hki, 3)
-ggplot(data=fitval_hki, aes(x = time, y = 'delay')) +
-    geom_line(data = fitval_hki, aes(y = delay), size = 0.5) +
-    geom_line(data = fitval_hki, aes(y = lower), size = 0.11, col='#00AFBB') +
-    geom_line(data = fitval_hki, aes(y = upper), size = 0.11, col='#00AFBB') +
-    geom_line(data = fitval_hki, aes(y = estimate), size = 0.5, col='#00AFBB')
+
+fitval2_hki <- data.frame(cbind(val_times_hki,pred2_hki[,-2]))
+names(fitval2_hki) <- c("time", "delay", "estimate", "lower", "upper")
+head(fitval2_hki, 3)
+ggplot(data=fitval2_hki, aes(x = time, y = 'delay')) +
+    geom_line(data = fitval2_hki, aes(y = delay), size = 0.5) +
+    geom_line(data = fitval2_hki, aes(y = lower), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval2_hki, aes(y = upper), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval2_hki, aes(y = estimate), size = 0.5, col='#00AFBB')
 ```
 
 We can calculate model performance in terms of loss functions. In particular, we use RMSE and MAE to describe the performance. 
