@@ -13,11 +13,19 @@ Train network is naturally very interconnected system and delay of one train oft
 First some necessary initialisation tasks
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-Sys.setenv(https_proxy="http://wwwproxy.fmi.fi:8080")
+#Sys.setenv(https_proxy="http://wwwproxy.fmi.fi:8080")
 install.packages("brms")
 install.packages("tidyverse")
 install.packages("anytime")
 install.packages("caTools")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+install.packages("ggplot2")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+install.packages("brms")
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -76,8 +84,8 @@ Data license is CC4BY.
 We load data from csv file following:
 
 ```{r}
-data_file <- "tiny_filtered.csv"
-val_data_file <- "validation.csv"
+data_file <- "data/hki_all.csv"
+val_data_file <- "data/validation.csv"
 
 df <- read.csv(data_file)
 df$datetime <- anytime::anytime(df$time)
@@ -134,11 +142,11 @@ options(repr.plot.width=10, repr.plot.height=6)
 
 for (col in cols){
     p1 <- hist(df[,col],
-          main=paste("Histogram fors ",col),
+          main=paste("Histogram of ",col),
           xlab='', col=rgb(0,0,1), border=rgb(0,0,1),
           breaks=50, freq=FALSE)
     p2 <- hist(df_delay[,col],
-          main=paste("Histogram fors ",col),
+          main=paste("Histogram of ",col),
           xlab='', col=rgb(1,0,0,1/4), border=rgb(1,0,0,1/2),
           breaks=50, freq=FALSE, add=T)
 }
@@ -305,7 +313,7 @@ Model 2:
 ppc_stat(y, yrep2, 'zero', binwidth=.005)
 ```
 
-Similarly, if we look sever distributions, probability that delay is over 50 minutes, in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. The difference is anyway smaller than in the probability of 0 minute delay.  
+Similarly, if we look sever disrubtions, probability that delay is over 50 minutes, in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. The difference is anyway smaller than in the probability of 0 minute delay.  
 
 ```{r}
 over50 <- function(x) mean(x > 50)
@@ -404,5 +412,4 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 [1] Ludvigsen, J., & Klæboe, R. (2014). Extreme weather impacts on freight railways in Europe. Natural Hazards. https://doi.org/10.1007/s11069-013-0851-3
 
 [2] Oneto, L., Fumeo, E., Clerico, G., Canepa, R., Papa, F., Dambra, C., … Anguita, D. (2016). Advanced analytics for train delay prediction systems by including exogenous weather data. In Proceedings - 3rd IEEE International Conference on Data Science and Advanced Analytics, DSAA 2016 (pp. 458–467). https://doi.org/10.1109/DSAA.2016.57
-
 
