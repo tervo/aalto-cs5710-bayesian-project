@@ -250,6 +250,8 @@ Model 1:
 plot(fit1)
 ```
 
+
+
 Model 2:
 ```{r}
 plot(fit2)
