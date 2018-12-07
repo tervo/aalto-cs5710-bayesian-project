@@ -84,8 +84,8 @@ Data license is CC4BY.
 We load data from csv file following:
 
 ```{r}
-data_file <- "data/hki_all.csv"
-val_data_file <- "data/validation.csv"
+data_file <- "hki_all.csv"
+val_data_file <- "validation.csv"
 
 df <- read.csv(data_file)
 df$datetime <- anytime::anytime(df$time)
