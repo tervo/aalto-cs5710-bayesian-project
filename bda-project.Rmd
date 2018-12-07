@@ -155,20 +155,6 @@ for (col in cols){
 
 # 3. Description of the model
 
-informative
-```{r}
-prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
-           set_prior("normal(1024,69)", class = "b", coef="pressure"),
-           set_prior("normal(85,17.5)", class = "b", coef="mean_humidity"),
-           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
-#           set_prior("gamma(1,1000)", lb=0, class = "b"),
-           set_prior("gamma(1,0.23)", lb=0, class = "b"))
-```
-
-non informative
-
-
-
 
 ```{r Non-informative prior}
 options(mc.cores = parallel::detectCores())
@@ -181,29 +167,6 @@ fit1 <- brm(
 )
 ```
 
-
-```{r Informative prior}
-options(mc.cores = parallel::detectCores())
-fit2 <- brm(
-    delay ~ 1 + min_temperature + max_snowdepth + 
-            mean_humidity + max_windgust + 
-            mean_winddirection + min_vis +
-            max_precipitation6h,
-    data = df,
-    prior = prior1
-)
-```
-
-```{r Fewer parameter}
-options(mc.cores = parallel::detectCores())
-fit3 <- brm(
-    delay ~ 1 + min_temperature + max_snowdepth + 
-            mean_winddirection + 
-            max_precipitation6h,
-    data = df,
-    # prior = prior1
-)
-```
 
 ```{r}
 summary(fit1)
@@ -350,6 +313,19 @@ ppc_dens_overlay(y[0:1000], yrep2[,0:1000])
 ```
 
 # 9. Model comparison
+We try model with fewer variables (predictors)
+
+```{r Fewer parameter}
+options(mc.cores = parallel::detectCores())
+fit3 <- brm(
+    delay ~ 1 + min_temperature + max_snowdepth + 
+            mean_winddirection + 
+            max_precipitation6h,
+    data = df,
+    # prior = prior1
+)
+```
+
 
 # 10. Predictive performance assessment
 
@@ -413,6 +389,34 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 ```
 
 # 11. Sensitivity analysis
+
+We test with different informative prior
+
+```{r setup informative prior}
+prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
+           set_prior("normal(1024,69)", class = "b", coef="pressure"),
+           set_prior("normal(85,17.5)", class = "b", coef="mean_humidity"),
+           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
+#           set_prior("gamma(1,1000)", lb=0, class = "b"),
+           set_prior("gamma(1,0.23)", lb=0, class = "b"))
+```
+
+
+
+```{r Informative prior}
+options(mc.cores = parallel::detectCores())
+fit2 <- brm(
+    delay ~ 1 + min_temperature + max_snowdepth + 
+            mean_humidity + max_windgust + 
+            mean_winddirection + min_vis +
+            max_precipitation6h,
+    data = df,
+    prior = prior1
+)
+```
+
+
+
 
 # 12. Discussion of problems, and potential improvements
 
