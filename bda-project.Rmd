@@ -155,17 +155,9 @@ for (col in cols){
 
 # 3. Description of the model
 
+informative
 ```{r}
-date1 <- as.POSIXct("2010-01-01 00:00:00")
-date2 <- as.POSIXct("2010-01-02 00:00:00")
-int <- interval(date1, date2)
-
-df_tiny <- df[df$datetime %within% int,]
-dim(df_tiny)
-```
-
-```{r}
-prior1 <- c(set_prior("normal(-19,45)", class = "b", coef="min_temperature"),
+prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
            set_prior("normal(1024,69)", class = "b", coef="pressure"),
            set_prior("normal(85,17.5)", class = "b", coef="mean_humidity"),
            set_prior("normal(4,9)", class = "b", coef="max_windgust"),
@@ -173,30 +165,45 @@ prior1 <- c(set_prior("normal(-19,45)", class = "b", coef="min_temperature"),
            set_prior("gamma(1,0.23)", lb=0, class = "b"))
 ```
 
+non informative
 
-```{r}
+
+
+
+```{r Non-informative prior}
 options(mc.cores = parallel::detectCores())
 fit1 <- brm(
-    delay ~ 1 + min_temperature + pressure + 
+    delay ~ 1 + min_temperature + max_snowdepth + 
             mean_humidity + max_windgust + 
-            mean_winddirection + 
-            max_precipitation6h + (1|p|trainstation),
+            mean_winddirection + min_vis +
+            max_precipitation6h,
     data = df
 )
 ```
 
-```{r}
+
+```{r Informative prior}
 options(mc.cores = parallel::detectCores())
 fit2 <- brm(
-    delay ~ 1 + min_temperature + pressure + 
+    delay ~ 1 + min_temperature + max_snowdepth + 
             mean_humidity + max_windgust + 
-            mean_winddirection + 
-            max_precipitation6h + (1|p|trainstation),
+            mean_winddirection + min_vis +
+            max_precipitation6h,
     data = df,
     prior = prior1
 )
 ```
 
+```{r Fewer parameter}
+options(mc.cores = parallel::detectCores())
+fit3 <- brm(
+    delay ~ 1 + min_temperature + max_snowdepth + 
+            mean_winddirection + 
+            max_precipitation6h,
+    data = df,
+    # prior = prior1
+)
+```
 
 ```{r}
 summary(fit1)
