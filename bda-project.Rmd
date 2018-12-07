@@ -123,6 +123,7 @@ Resulting graph is plotted below. Blue bars stands for all rows and red columns 
 
 From the plot we can see that at least temperature, snow depth, visibility and wind direction has been significantly different when severe rail traffic disruptions has been occurred. So we use these parameters to fit our model. We also add wind gust as it's assumed to cause train delays (specially with drifting snow). 
 
+
 ```{r}
 library(reshape2)
 
@@ -164,10 +165,17 @@ fit1 <- brm(
 ```
 
 
+```{r}
+summary(fit1)
+```
+
+
 # 4. Description of the prior choices
 
+Non informative
+
 ```{r}
-prior_summary(fit2)
+prior_summary(fit1)
 ```
 
 # 5. Stan
@@ -190,70 +198,18 @@ rhat(fit1)
 stanplot(fit1, type='rhat')
 ```
 
-Also other models have converged well:
-
-Model 2:
-```{r}
-rhat(fit2)
-stanplot(fit2, type='rhat')
-```
-
-Model 3:
-```{r}
-rhat(fit3)
-stanplot(fit3, type='rhat')
-```
-
-Model 4:
-```{r}
-rhat(fit4)
-stanplot(fit4, type='rhat')
-```
 
 To check a convergence of different chains and posterior distribution, we can plot fitted models. We can see, that all chains have converged to similar values for all parameters. We can also see, that all parameters have quite similar posterior distribution (with different means of course).  
 
-Model 1:
 ```{r}
 plot(fit1)
 ```
 
 
-
-Model 2:
-```{r}
-plot(fit2)
-```
-
-Model 3:
-```{r}
-plot(fit3)
-```
-
-Model 4:
-```{r}
-plot(fit4)
-```
-
 To analyse effective sample size, we can plot ratio of effective samples and all samples. This means amount of draws being able to estimate true mean value of the parameter. We can see that none Neff/N values are below 0.1 and pretty large amount of them are over 0.5, which again verify that both models have converged well.
 
-Model 1:
 ```{r}
 stanplot(fit1, type='neff')
-```
-
-Model 2:
-```{r}
-stanplot(fit2, type='neff')
-```
-
-Model 3:
-```{r}
-stanplot(fit3, type='neff')
-```
-
-Model 4:
-```{r}
-stanplot(fit4, type='neff')
 ```
 
 As conclusion, the models have converged well.
@@ -267,15 +223,6 @@ library("bayesplot")
 yrep <- posterior_predict(fit1, draws = 500)
 ```
 
-```{r}
-library("bayesplot")
-yrep2 <- posterior_predict(fit2, draws = 500)
-```
-
-```{r}
-library("bayesplot")
-yrep4 <- posterior_predict(fit4, draws = 500)
-```
 
 ```{r}
 dim(yrep)
@@ -288,14 +235,9 @@ First we look plain mean value of the simulations (light blue) and the observed 
 y <- df$delay
 ```
 
-Model 1:
+
 ```{r}
 ppc_stat(y, yrep, binwidth=.005)
-```
-
-Model 2:
-```{r}
-ppc_stat(y, yrep2, binwidth=.005)
 ```
 
 If we look probability that delay is 0 minutes in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. 
@@ -304,14 +246,9 @@ If we look probability that delay is 0 minutes in the simulations (light blue) a
 zero <- function(x) mean(x == 0)
 ```
 
-Model 1:
+
 ```{r}
 ppc_stat(y, yrep, 'zero', binwidth=.005)
-```
-
-Model 2:
-```{r}
-ppc_stat(y, yrep2, 'zero', binwidth=.005)
 ```
 
 Similarly, if we look sever disrubtions, probability that delay is over 50 minutes, in the simulations (light blue) and the observed data (dark blue), we can see a slight difference. The difference is anyway smaller than in the probability of 0 minute delay.  
@@ -320,39 +257,24 @@ Similarly, if we look sever disrubtions, probability that delay is over 50 minut
 over50 <- function(x) mean(x > 50)
 ```
 
-Model 1:
+
 ```{r}
 ppc_stat(y, yrep, 'over50', binwidth=.005)
-```
-Model 2:
-```{r}
-ppc_stat(y, yrep2, 'over50', binwidth=.005)
 ```
 
 We can analyse a distribution of simulated draws and observed data by plotting them into the same plot. We use first 1000 rows from the data to avoid running out of memory. Resulting image tells us that our models are not able to follow true shape of observations very well. They produce negative values and miss large amount of 0 values. 
 
-Model 1:
+
 ```{r}
 ppc_dens_overlay(y[0:1000], yrep[,0:1000])
 ```
-
-Model 2:
-```{r}
-ppc_dens_overlay(y[0:1000], yrep2[,0:1000])
-```
-
-Model 4:
-```{r}
-ppc_dens_overlay(y[0:1000], yrep4[,0:1000])
-```
-
 
 # 9. Model comparison
 We try model with fewer variables (predictors)
 
 ```{r Fewer parameter}
 options(mc.cores = parallel::detectCores())
-fit3 <- brm(
+fit2 <- brm(
     delay ~ 1 + min_temperature + max_snowdepth + 
             mean_winddirection + 
             max_precipitation6h,
@@ -360,6 +282,12 @@ fit3 <- brm(
     # prior = prior1
 )
 ```
+
+
+```{r}
+loo <- loo(fit1,fit2)
+```
+
 
 
 # 10. Predictive performance assessment
@@ -374,8 +302,10 @@ validation <- validation[order(validation$datetime),]
 
 Then we create a prediction of train delays based on the same parameters we have used to fit our model.  
 
+## Model 1
+
 ```{r}
-val_data <- validation[,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
+val_data <- validation[,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
 pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
@@ -391,7 +321,7 @@ plot(pred)
 To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
 
 ```{r}
-val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
+val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'pressure', 'mean_humidity', 'max_windgust', 'mean_winddirection', 'max_precipitation6h', 'trainstation')]
 pred_hki <- predict(fit1, newdata = val_data_hki, re_formula = NA)
 head(pred_hki, 3)
 
@@ -423,37 +353,116 @@ cat(sprintf("RMSE: %.2f\n", rmse(error)))
 cat(sprintf("MAE:  %.2f", mae(error)))
 ```
 
+
+------------ 
+## Model 2
+
+
+```{r}
+val_data <- validation[,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
+pred <- predict(fit2, newdata = val_data, re_formula = NA)
+head(pred, 3)
+```
+
+We can plot values and corresponding estimated errors. We can see that model forecasts negative values which of course doesn't make sense. Median values see plausible but estimated errors are large. From the plot we can also see, that predicted values are very discrete which is not good.
+
+```{r}
+options(repr.plot.width=4, repr.plot.height=4)
+summary(pred)
+plot(pred)
+```
+
+To really visualise predictions, we plot predicted delays and true delays on the same plot. We select Helsinki Railwaystation for this illustration. From the plot we can see, that although the model has converged well, it has no real prediction power. 
+
+```{r}
+val_data_hki <- validation[validation$trainstation == 'HKI' ,c('min_temperature', 'min_vis', 'max_windgust', 'mean_winddirection', 'max_snowdepth')]
+pred_hki <- predict(fit2, newdata = val_data_hki, re_formula = NA)
+head(pred_hki, 3)
+
+options(repr.plot.width=14, repr.plot.height=4)
+val_times_hki <- validation[validation$trainstation == 'HKI', c('datetime','delay')]
+fitval_hki <- data.frame(cbind(val_times_hki,pred_hki[,-2]))
+names(fitval_hki) <- c("time", "delay", "estimate", "lower", "upper")
+head(fitval_hki, 3)
+ggplot(data=fitval_hki, aes(x = time, y = 'delay')) +
+    geom_line(data = fitval_hki, aes(y = delay), size = 0.5) +
+    geom_line(data = fitval_hki, aes(y = lower), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval_hki, aes(y = upper), size = 0.11, col='#00AFBB') +
+    geom_line(data = fitval_hki, aes(y = estimate), size = 0.5, col='#00AFBB')
+```
+
+We can calculate model performance in terms of loss functions. In particular, we use RMSE and MAE to describe the performance. 
+
+```{r}
+rmse <- function(error)
+{
+    sqrt(mean(error^2))
+} 
+mae <- function(error)
+{
+    mean(abs(error))
+}
+error <- validation[,'delay'] - fitval[,'estimate']
+cat(sprintf("RMSE: %.2f\n", rmse(error)))
+cat(sprintf("MAE:  %.2f", mae(error)))
+```
+
+
 # 11. Sensitivity analysis
 
 We test with different informative prior
 
-```{r setup informative prior}
+```{r setup weakly informative prior}
 prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
-           set_prior("normal(1024,69)", class = "b", coef="pressure"),
-           set_prior("normal(85,17.5)", class = "b", coef="mean_humidity"),
+           set_prior("normal(1024,69)", class = "b", coef="max_snowdepth"),
            set_prior("normal(4,9)", class = "b", coef="max_windgust"),
-#           set_prior("gamma(1,1000)", lb=0, class = "b"),
-           set_prior("gamma(1,0.23)", lb=0, class = "b"))
+           set_prior("normal(1024,69)", class = "b", coef="mean_winddirection"),
+           set_prior("normal(85,17.5)", class = "b", coef="min_vis"),
+           set_prior("normal(10,100)", class = "Intercept"))
 ```
 
 
-
-```{r Informative prior}
+```{r Model with weakly Informative prior}
 options(mc.cores = parallel::detectCores())
-fit2 <- brm(
-    delay ~ 1 + min_temperature + max_snowdepth + 
-            mean_humidity + max_windgust + 
-            mean_winddirection + min_vis +
-            max_precipitation6h,
+fit3 <- brm(
+    delay ~  1 + min_temperature + max_snowdepth + 
+             max_windgust + 
+            mean_winddirection + min_vis
     data = df,
     prior = prior1
 )
 ```
 
 
+```{r setup highly informative prior}
+prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
+           set_prior("normal(1024,69)", class = "b", coef="max_snowdepth"),
+           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
+           set_prior("normal(1024,69)", class = "b", coef="mean_winddirection"),
+           set_prior("normal(85,17.5)", class = "b", coef="min_vis"),
+           set_prior("normal(10,100)", class = "Intercept"))
+```
 
+
+```{r Model with highly Informative prior}
+options(mc.cores = parallel::detectCores())
+fit3 <- brm(
+    delay ~  1 + min_temperature + max_snowdepth + 
+             max_windgust + 
+            mean_winddirection + min_vis
+    data = df,
+    prior = prior1
+)
+```
+
+Highly informative prior is far from the observed data --> highly influence the posterior results
 
 # 12. Discussion of problems, and potential improvements
+
+The model ignore the time-series structure of the data, treating them as thousands of independent observations
+The model is not good for predictive performance. In other previous research with same data, it show that tree model such that random forest performs better than linear regression.
+
+Potential improvements maybe how to include Bayesian inference into complex model such that random forest
 
 
 # References
