@@ -160,6 +160,23 @@ for (col in cols){
 }
 ```
 
+```{r}
+cols = c( 
+         'min_temperature','max_snowdepth',
+          'max_windgust',
+         'mean_winddirection',  
+         'min_vis')
+
+par(mfrow=c(2,3))
+options(repr.plot.width=10, repr.plot.height=6)
+
+for (col in cols){
+    p1 <- plot(df[,col],df[,"delay"],
+          main=paste(col, " plotted against delay"),
+          xlab=paste(col), ylab = "delay")
+}
+```
+
 
 # Description of the model
 
@@ -179,7 +196,7 @@ summary(fit1)
 
 # Description of the prior choices
 
-Non informative
+Non-informative, The default prior is an improper flat prior over the reals.
 
 ```{r}
 prior_summary(fit1)
@@ -285,6 +302,20 @@ Chain 4:                5402.4 seconds (Total)
 Chain 4: 
 Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
 Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 2813.55 seconds (Warm-up)
+Chain 2:                4081.32 seconds (Sampling)
+Chain 2:                6894.87 seconds (Total)
+Chain 2: 
+Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 2560.62 seconds (Warm-up)
+Chain 1:                4546.7 seconds (Sampling)
+Chain 1:                7107.31 seconds (Total)
+Chain 1:
 ```
 </div>
 
@@ -385,6 +416,113 @@ fit2 <- brm(
 
 ```{r}
 summary(fit2)
+```
+
+```{r fit2, echo = FALSE, include=FALSE}
+starting worker pid=15000 on localhost:11373 at 13:23:06.092
+starting worker pid=14316 on localhost:11373 at 13:23:06.441
+starting worker pid=9604 on localhost:11373 at 13:23:06.785
+starting worker pid=21792 on localhost:11373 at 13:23:07.133
+
+SAMPLING FOR MODEL 'b88290d45df8be1ad9d5212af9bc766f' NOW (CHAIN 1).
+Chain 1: 
+Chain 1: Gradient evaluation took 0.007 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 70 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'b88290d45df8be1ad9d5212af9bc766f' NOW (CHAIN 2).
+Chain 2: 
+Chain 2: Gradient evaluation took 0.007 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 70 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'b88290d45df8be1ad9d5212af9bc766f' NOW (CHAIN 3).
+Chain 3: 
+Chain 3: Gradient evaluation took 0.013 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 130 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'b88290d45df8be1ad9d5212af9bc766f' NOW (CHAIN 4).
+Chain 4: 
+Chain 4: Gradient evaluation took 0.01 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 100 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 110.916 seconds (Warm-up)
+Chain 1:                78.146 seconds (Sampling)
+Chain 1:                189.062 seconds (Total)
+Chain 1: 
+Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 114.255 seconds (Warm-up)
+Chain 2:                74.568 seconds (Sampling)
+Chain 2:                188.823 seconds (Total)
+Chain 2: 
+Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 3: 
+Chain 3:  Elapsed Time: 115.889 seconds (Warm-up)
+Chain 3:                77.446 seconds (Sampling)
+Chain 3:                193.335 seconds (Total)
+Chain 3: 
+Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 4: 
+Chain 4:  Elapsed Time: 137.075 seconds (Warm-up)
+Chain 4:                59.381 seconds (Sampling)
+Chain 4:                196.456 seconds (Total)
+Chain 4: 
 ```
 
 
@@ -515,11 +653,11 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 We test with different informative prior
 
 ```{r setup weakly informative prior}
-prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
-           set_prior("normal(1024,69)", class = "b", coef="max_snowdepth"),
-           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
-           set_prior("normal(1024,69)", class = "b", coef="mean_winddirection"),
-           set_prior("normal(85,17.5)", class = "b", coef="min_vis"),
+prior1 <- c(set_prior("normal(-0.4,0.1)", class = "b", coef="min_temperature"),
+           set_prior("normal(0.1,0.1)", class = "b", coef="max_snowdepth"),
+           set_prior("normal(0.3,0.1)", class = "b", coef="max_windgust"),
+           set_prior("normal(-0.1,0.1)", class = "b", coef="mean_winddirection"),
+           set_prior("normal(-0.1,0.1)", class = "b", coef="min_vis"),
            set_prior("normal(10,100)", class = "Intercept"))
 ```
 
@@ -527,35 +665,246 @@ prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
 ```{r Model with weakly Informative prior}
 options(mc.cores = parallel::detectCores())
 fit3 <- brm(
-    delay ~  1 + min_temperature + max_snowdepth + 
-             max_windgust + 
-            mean_winddirection + min_vis
+    delay ~  1 + min_temperature + max_snowdepth + max_windgust + mean_winddirection + min_vis,
     data = df,
     prior = prior1
 )
 ```
 
+```{r echo = FALSE, include=FALSE}
+starting worker pid=18920 on localhost:11373 at 14:42:39.729
+starting worker pid=12620 on localhost:11373 at 14:42:40.092
+starting worker pid=10764 on localhost:11373 at 14:42:40.450
+starting worker pid=1836 on localhost:11373 at 14:42:40.816
+
+SAMPLING FOR MODEL '4b53f3cf3f8c99d2ba14c46134676b7f' NOW (CHAIN 1).
+Chain 1: 
+Chain 1: Gradient evaluation took 0.006 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 60 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL '4b53f3cf3f8c99d2ba14c46134676b7f' NOW (CHAIN 2).
+Chain 2: 
+Chain 2: Gradient evaluation took 0.009 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 90 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL '4b53f3cf3f8c99d2ba14c46134676b7f' NOW (CHAIN 3).
+Chain 3: 
+Chain 3: Gradient evaluation took 0.009 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 90 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL '4b53f3cf3f8c99d2ba14c46134676b7f' NOW (CHAIN 4).
+Chain 4: 
+Chain 4: Gradient evaluation took 0.018 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 180 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 3: 
+Chain 3:  Elapsed Time: 3064.71 seconds (Warm-up)
+Chain 3:                1447.22 seconds (Sampling)
+Chain 3:                4511.93 seconds (Total)
+Chain 3: 
+Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 3433.72 seconds (Warm-up)
+Chain 1:                2530.49 seconds (Sampling)
+Chain 1:                5964.21 seconds (Total)
+Chain 1: 
+Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 3927.59 seconds (Warm-up)
+Chain 2:                3219.1 seconds (Sampling)
+Chain 2:                7146.69 seconds (Total)
+Chain 2: 
+Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 4: 
+Chain 4:  Elapsed Time: 4362.35 seconds (Warm-up)
+Chain 4:                3632.5 seconds (Sampling)
+Chain 4:                7994.85 seconds (Total)
+Chain 4: 
+```
+
 
 ```{r setup highly informative prior}
-prior1 <- c(set_prior("normal(-0.625,45)", class = "b", coef="min_temperature"),
-           set_prior("normal(1024,69)", class = "b", coef="max_snowdepth"),
-           set_prior("normal(4,9)", class = "b", coef="max_windgust"),
-           set_prior("normal(1024,69)", class = "b", coef="mean_winddirection"),
-           set_prior("normal(85,17.5)", class = "b", coef="min_vis"),
+prior2 <- c(set_prior("normal(1,2)", class = "b", coef="min_temperature"),
+           set_prior("normal(5,10)", class = "b", coef="max_snowdepth"),
+           set_prior("normal(2,3)", class = "b", coef="max_windgust"),
+           set_prior("normal(10,15)", class = "b", coef="mean_winddirection"),
+           set_prior("normal(20,25)", class = "b", coef="min_vis"),
            set_prior("normal(10,100)", class = "Intercept"))
 ```
 
 
 ```{r Model with highly Informative prior}
 options(mc.cores = parallel::detectCores())
-fit3 <- brm(
-    delay ~  1 + min_temperature + max_snowdepth + 
-             max_windgust + 
-            mean_winddirection + min_vis
+fit4 <- brm(
+    delay ~  1 + min_temperature + max_snowdepth + max_windgust + mean_winddirection + min_vis,
     data = df,
-    prior = prior1
+    prior = prior2
 )
 ```
+
+```{r echo = FALSE, include=FALSE}
+starting worker pid=19928 on localhost:11373 at 17:21:45.460
+starting worker pid=15472 on localhost:11373 at 17:21:45.808
+starting worker pid=12680 on localhost:11373 at 17:21:46.154
+starting worker pid=1032 on localhost:11373 at 17:21:46.506
+
+SAMPLING FOR MODEL 'f3b4b272d8a56640deb7273104799cf4' NOW (CHAIN 1).
+Chain 1: 
+Chain 1: Gradient evaluation took 0.006 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 60 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'f3b4b272d8a56640deb7273104799cf4' NOW (CHAIN 2).
+Chain 2: 
+Chain 2: Gradient evaluation took 0.009 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 90 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'f3b4b272d8a56640deb7273104799cf4' NOW (CHAIN 3).
+Chain 3: 
+Chain 3: Gradient evaluation took 0.01 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 100 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+
+SAMPLING FOR MODEL 'f3b4b272d8a56640deb7273104799cf4' NOW (CHAIN 4).
+Chain 4: 
+Chain 4: Gradient evaluation took 0.011 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 110 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
+Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
+Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
+Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 1: 
+Chain 1:  Elapsed Time: 3461.97 seconds (Warm-up)
+Chain 1:                2358.7 seconds (Sampling)
+Chain 1:                5820.67 seconds (Total)
+Chain 1: 
+Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 4: 
+Chain 4:  Elapsed Time: 2922.78 seconds (Warm-up)
+Chain 4:                3079.69 seconds (Sampling)
+Chain 4:                6002.47 seconds (Total)
+Chain 4: 
+Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 3: 
+Chain 3:  Elapsed Time: 3031.31 seconds (Warm-up)
+Chain 3:                3711.3 seconds (Sampling)
+Chain 3:                6742.61 seconds (Total)
+Chain 3: 
+Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+Chain 2: 
+Chain 2:  Elapsed Time: 2974.47 seconds (Warm-up)
+Chain 2:                3967.34 seconds (Sampling)
+Chain 2:                6941.81 seconds (Total)
+Chain 2:
+```
+
 
 Highly informative prior is far from the observed data --> highly influence the posterior results
 
