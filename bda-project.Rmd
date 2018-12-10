@@ -1,10 +1,15 @@
 ---
 title: "BDA - project"
-output: 
+output:
   html_notebook:
-    toc: true
-    number_section: true
     df_print: paged
+    number_section: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
 <style>
 div.white pre { background-color:white; }
@@ -160,6 +165,13 @@ for (col in cols){
 }
 ```
 
+
+# Description of the model
+
+We decide to use BRMS to fit bayesian linear regression to the data, with target variable "delay" and predictors are: min_temperature, max_snowdepth, max_windgust, mean_winddirection ,min_vis
+
+The selection of the predictors is based on histogram above and also based on their plor agaisnt the target variable below
+
 ```{r}
 cols = c( 
          'min_temperature','max_snowdepth',
@@ -178,8 +190,8 @@ for (col in cols){
 ```
 
 
-# Description of the model
 
+Here is the code fitting the model (1 represent the intercept)
 
 ```{r Non-informative prior, echo = TRUE, include= TRUE}
 options(mc.cores = parallel::detectCores())
@@ -194,9 +206,10 @@ fit1 <- brm(
 summary(fit1)
 ```
 
+It can be seen that most of the coefficient is near zero , indicating that linear regression might not be a good choice
 # Description of the prior choices
 
-Non-informative, The default prior is an improper flat prior over the reals.
+Here inthe model, we don't specify any prior choice. The default prior is an non-informative flat prior over the reals. In this case we decide to let the data speak for itself
 
 ```{r}
 prior_summary(fit1)
@@ -209,6 +222,8 @@ fit1$model
 ```
 
 # How the Stan model run
+
+We use default setting from brms with warmup = 1000, iter = 2000, chains = 4
 
 <div class = "white">
 ```{r}
@@ -404,7 +419,7 @@ ppc_dens_overlay(y[0:1000], yrep[,0:1000])
 ```
 
 # Model comparison
-We try model with fewer variables (predictors)
+We try model with fewer variables (predictors). Our second model includes only 3 predictors min_temperature , max_snowdepth, mean_winddirection
 
 ```{r Fewer parameter}
 options(mc.cores = parallel::detectCores())
@@ -417,6 +432,8 @@ fit2 <- brm(
 ```{r}
 summary(fit2)
 ```
+
+From the result, it can be seen that there is no big different from the posterior of model 1 and 2
 
 ```{r fit2, echo = FALSE, include=FALSE}
 starting worker pid=15000 on localhost:11373 at 13:23:06.092
@@ -525,11 +542,11 @@ Chain 4:                196.456 seconds (Total)
 Chain 4: 
 ```
 
+Here we compare the 2 models using LOO
 
 ```{r}
-loo <- loo(fit1,fit2)
+loo(fit1,fit2)
 ```
-
 
 
 # Predictive performance assessment
@@ -547,7 +564,7 @@ Then we create a prediction of train delays based on the same parameters we have
 ## Model 1
 
 ```{r}
-val_data <- validation[,c('min_temperature', 'min_vis', 'mean_humidity', 'max_windgust', 'mean_winddirection')]
+val_data <- validation[,c('min_temperature', 'min_vis',  'max_windgust', 'mean_winddirection','max_snowdepth')]
 pred <- predict(fit1, newdata = val_data, re_formula = NA)
 head(pred, 3)
 ```
@@ -650,7 +667,9 @@ cat(sprintf("MAE:  %.2f", mae(error)))
 
 # Sensitivity analysis
 
-We test with different informative prior
+In this section, we test with different informative prior to see how different prior can influence the final result
+
+The first set of prior is selected based on the estimate we get from above analysis. Therefore this is informative prior. Here we use normal distribution for all of the prior choice
 
 ```{r setup weakly informative prior}
 prior1 <- c(set_prior("normal(-0.4,0.1)", class = "b", coef="min_temperature"),
@@ -670,6 +689,12 @@ fit3 <- brm(
     prior = prior1
 )
 ```
+
+```{r}
+summary(fit3)
+```
+
+We can see that there is no big difference in the posterior of model 3 and 1
 
 ```{r echo = FALSE, include=FALSE}
 starting worker pid=18920 on localhost:11373 at 14:42:39.729
@@ -779,6 +804,7 @@ Chain 4:
 ```
 
 
+The second model with informative prior - which we choose based on our understanding of the data. For example, we believe that min_vis (mininmum vision) has more influence than min_temprature in causing train delay
 ```{r setup highly informative prior}
 prior2 <- c(set_prior("normal(1,2)", class = "b", coef="min_temperature"),
            set_prior("normal(5,10)", class = "b", coef="max_snowdepth"),
@@ -797,6 +823,12 @@ fit4 <- brm(
     prior = prior2
 )
 ```
+
+```{r}
+summary(fit4)
+```
+
+Here we can see that even with highly informative prior, there is no big difference between the posterior of model 4 and 1, although the effective sample is somewhat smaller
 
 ```{r echo = FALSE, include=FALSE}
 starting worker pid=19928 on localhost:11373 at 17:21:45.460
